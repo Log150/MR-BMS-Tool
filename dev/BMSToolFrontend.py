@@ -51,7 +51,7 @@ class MainWindow(QWidget):
         self.layout = QGridLayout(self)
 
 
-        self.candapter = None       # reference to the connected CAN adapter
+        self.candapter = None     # reference to the connected CAN adapter
         self.worker = None
 
 
