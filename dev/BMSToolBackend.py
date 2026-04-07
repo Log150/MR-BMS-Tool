@@ -1,17 +1,40 @@
 import pyCandapter, can, signal, serial.tools.list_ports, serial.serialutil, struct
 from LE import *
 
-# --- CONSTANTS (match your firmware) ---
-TOTAL_AD68              = 2
-TOTAL_CELLS             = 14      # replace with your actual cells per IC
-BASE_CAN_ID             = 0xB000  # replace with your actual BASE_CAN_ID
+class BMSValues:
+    
+    def __init__(self, TOTAL_AD68, TOTAL_CELLS):
 
-CELL_CAN_ID_BASE        = BASE_CAN_ID
-CELL_CAN_ID_MAX         = CELL_CAN_ID_BASE + TOTAL_AD68 * TOTAL_CELLS
-IC_CAN_ID_BASE          = CELL_CAN_ID_MAX #i.e. just BASE_CAN_ID + TOTAL_AD68 * TOTAL_CELLS
-IC_CAN_ID_MAX           = IC_CAN_ID_BASE + TOTAL_AD68
+        self.TOTAL_AD68              = TOTAL_AD68
+        self.TOTAL_CELLS             = TOTAL_CELLS     
+        self.BASE_CAN_ID             = 0xB000  
 
-CHARGER_CONFIG_CAN_ID   = 0x1806E5F4  # replace with your actual ID
+        self.CELL_CAN_ID_BASE        = self.BASE_CAN_ID
+        self.CELL_CAN_ID_MAX         = self.CELL_CAN_ID_BASE + self.TOTAL_AD68 * self.TOTAL_CELLS
+        self.IC_CAN_ID_BASE          = self.CELL_CAN_ID_MAX #i.e. just BASE_CAN_ID + TOTAL_AD68 * TOTAL_CELLS
+        self.IC_CAN_ID_MAX           = self.IC_CAN_ID_BASE + self.TOTAL_AD68
+
+        self.CHARGER_CONFIG_CAN_ID   = 0x1806E5F4  
+
+    def convertAndSetValues(self, TOTAL_AD68, TOTAL_CELLS):
+        TOTAL_AD68_int = None
+        TOTAL_CELLS_int = None
+
+        try:
+            TOTAL_AD68_int = int(TOTAL_AD68)
+
+            TOTAL_CELLS_int = int(TOTAL_CELLS)
+
+            self.__init__(TOTAL_AD68_int, TOTAL_CELLS_int)
+        
+        except TypeError:
+            print("wrong type")
+
+        except:
+            print("Something went wrong")
+
+        
+bmsValueTransfer = BMSValues(2,14)
 
 def readCANbusToFile(candapter, msgLen, id=None):
     dataToSave = []
@@ -85,25 +108,25 @@ def formatCANMessage(candapter,msgLen):
     ICs = [
         [
             [None, None],                                # Segment Data aka IC Data
-            [[None, None] for _ in range(TOTAL_CELLS)],  # Cell data
+            [[None, None] for _ in range(bmsValueTransfer.TOTAL_CELLS)],  # Cell data
         ]
-        for _ in range(TOTAL_AD68)
+        for _ in range(bmsValueTransfer.TOTAL_AD68)
     ]
 
     for i in formatted:
         id = int(i['id'], 16)
-        if id >= IC_CAN_ID_MAX:
+        if id >= bmsValueTransfer.IC_CAN_ID_MAX:
             pass
-        elif id >= IC_CAN_ID_BASE:
+        elif id >= bmsValueTransfer.IC_CAN_ID_BASE:
             # Segment data
-            IC_Index = id - IC_CAN_ID_BASE
+            IC_Index = id - bmsValueTransfer.IC_CAN_ID_BASE
             ICs[IC_Index][0][0] = i['id']
             ICs[IC_Index][0][1] = i['data']
             
-        elif id >= CELL_CAN_ID_BASE:
+        elif id >= bmsValueTransfer.CELL_CAN_ID_BASE:
             # Cell data
-            currentIC = (id - CELL_CAN_ID_BASE) // TOTAL_CELLS
-            cellIndex = (id - CELL_CAN_ID_BASE) % TOTAL_CELLS
+            currentIC = (id - bmsValueTransfer.CELL_CAN_ID_BASE) // bmsValueTransfer.TOTAL_CELLS
+            cellIndex = (id - bmsValueTransfer.CELL_CAN_ID_BASE) % bmsValueTransfer.TOTAL_CELLS
             ICs[currentIC][1][cellIndex][0] = i['id']
             ICs[currentIC][1][cellIndex][1] = i['data']
 
@@ -131,9 +154,9 @@ def decode_cell_message(can_id, data):
     """
     (cell_voltage, voltage_diff, cell_temp, flags) = struct.unpack_from('<hhhB', bytes(data), 0)
 
-    offset = can_id - BASE_CAN_ID
-    ic = offset // TOTAL_CELLS
-    c  = offset %  TOTAL_CELLS
+    offset = can_id - bmsValueTransfer.BASE_CAN_ID
+    ic = offset // bmsValueTransfer.TOTAL_CELLS
+    c  = offset %  bmsValueTransfer.TOTAL_CELLS
 
 
     return {
@@ -160,7 +183,7 @@ def decode_ic_message(can_id, data):
 
     (v_segment, temp_ic, flags) = struct.unpack_from('<fhB', bytes(data), 0)
 
-    ic = can_id - IC_CAN_ID_BASE
+    ic = can_id - bmsValueTransfer.IC_CAN_ID_BASE
 
     return {
         'type':         'ic_status',
@@ -193,15 +216,15 @@ def decode_message(can_id, data):
         # return decode_ad29_status_message(data)
 
     # Charger config
-    if fixed_ID == CHARGER_CONFIG_CAN_ID:
+    if fixed_ID == bmsValueTransfer.CHARGER_CONFIG_CAN_ID:
         return {'type': 'charger_config', 'raw': list(converted_data)}
 
     # IC messages
-    if IC_CAN_ID_BASE <= fixed_ID < IC_CAN_ID_MAX:
+    if bmsValueTransfer.IC_CAN_ID_BASE <= fixed_ID < bmsValueTransfer.IC_CAN_ID_MAX:
         return decode_ic_message(fixed_ID, converted_data)
 
     # Cell messages
-    if BASE_CAN_ID <= fixed_ID < CELL_CAN_ID_MAX:
+    if bmsValueTransfer.BASE_CAN_ID <= fixed_ID < bmsValueTransfer.CELL_CAN_ID_MAX:
         return decode_cell_message(fixed_ID, converted_data)
 
     return {'type': 'unknown', 'id': hex(fixed_ID), 'raw': list(converted_data)}

@@ -13,7 +13,7 @@ class CANWorker(QThread):
 
     def run(self):
         while not self.isInterruptionRequested():
-            print("Worker loop iteration")  # add this
+            #print("Worker loop iteration")  # add this
             try:
                 ic = formatCANMessage(self.candapter, self.msgLen)
                 decodedIC = decode_formatted_data(ic)
