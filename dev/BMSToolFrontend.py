@@ -9,6 +9,7 @@ import sys
 import pyqtgraph as pg
 import pyqtgraph.exporters
 
+
 #baudrates: 125000,       250000,       500000,       1000000
 #           125 kBit/sec, 250 kBit/sec, 500 kBit/sec, 1 MBit/sec
 
@@ -242,21 +243,23 @@ class MainWindow(QWidget):
             return
 
         try:
-            for row, (ic_dict, cells) in enumerate(ic):
-                ic_val = f"{ic_dict['v_segment_V']:.3f}" if ic_dict.get('type') == 'ic_status' else "N/A"
-                print(f"Setting row {row}, col 0 to {ic_val}")
-                self.cellDataArray[0].setItem(row, 0, QTableWidgetItem(ic_val))
+            for i in range(0, int((bmsValueTransfer.TOTAL_AD68 / 2) + 1)):
+                for row, (ic_dict, cells) in enumerate(ic):
+                    ic_val = f"{ic_dict['v_segment_V']:.3f}" if ic_dict.get('type') == 'ic_status' else "N/A"
+                    print(f"Setting row {row}, col 0 to {ic_val}")
+                    self.cellDataArray[i].setItem(row, 0, QTableWidgetItem(ic_val))
 
-                for col, cell in enumerate(cells, start=1):
-                    if cell.get('type') == 'cell':
-                        cell_val = f"{cell['voltage_V']:.3f}"
-                    else:
-                        cell_val = "N/A"
-                    print(f"Setting row {row}, col {col} to {cell_val}")
-                    self.cellDataArray[0].setItem(row, col, QTableWidgetItem(cell_val))
+                    for col, cell in enumerate(cells, start=1):
+                        if cell.get('type') == 'cell':
+                            cell_val = f"{cell['voltage_V']:.3f}"
+                        else:
+                            cell_val = "N/A"
+                        print(f"Setting row {row}, col {col} to {cell_val}")
+                        self.cellDataArray[i].setItem(row, col, QTableWidgetItem(cell_val))
 
-            print(f"Table rows: {self.cellDataArray[0].rowCount()}, cols: {self.cellDataArray[0].columnCount()}")
-            self.cellDataArray[0].viewport().update()
+                print(f"Table rows: {self.cellDataArray[i].rowCount()}, cols: {self.cellDataArray[0].columnCount()}")
+                self.cellDataArray[i].viewport().update()
+
         except (IndexError, TypeError, KeyError) as e:
             print(f"[ERROR] onDataReady failed: {e}")
 
@@ -411,6 +414,12 @@ class MainWindow(QWidget):
 
         connectButton = PushButtonLE("Connect")
 
+        ad68box = TextEditLE()
+        ad68box.setPlainText("10")
+
+        cellsbox = TextEditLE()
+        cellsbox.setPlainText("14")
+
         def connectToCAN():
             self.comPort = comSelect.currentText()
             self.canBaud = items.get(baudSelect.currentText())
@@ -420,6 +429,12 @@ class MainWindow(QWidget):
                 self.candapter = pyCandapter.pyCandapter(self.comPort, self.SERIALBAUDRATE)
                 self.candapter.openCANBus(self.canBaud)
                 print("Connected to CAN bus.")
+                
+                bmsValueTransfer.convertAndSetValues( ad68box.toPlainText() , cellsbox.toPlainText() )
+
+                self.rebuildTabFour()
+                self.tabFourLayout.update()
+
             except Exception as e:
                 QMessageBox.critical(self, "Connection Error", str(e))
                 self.candapter = None
@@ -427,12 +442,20 @@ class MainWindow(QWidget):
 
         connectButton.clicked.connect(connectToCAN)
 
+        self.tabZeroLayout.addWidget(QLabel("COM Number: "),0,0)
+        self.tabZeroLayout.addWidget(comSelect,0,1)
+        self.tabZeroLayout.addWidget(refreshButton,0,2)
 
-        self.tabZeroLayout.addWidget(comSelect,0,0)
-        self.tabZeroLayout.addWidget(refreshButton,0,1)
-        self.tabZeroLayout.addWidget(baudSelect,1,0)
+        self.tabZeroLayout.addWidget(QLabel("Baudrate: "),1,0)
+        self.tabZeroLayout.addWidget(baudSelect,1,1)
 
-        self.tabZeroLayout.addWidget(connectButton,2,0,1,2)
+        self.tabZeroLayout.addWidget(QLabel("Number of AD68: "),2,0)
+        self.tabZeroLayout.addWidget(ad68box,2,1)
+
+        self.tabZeroLayout.addWidget(QLabel("Number of Cells: "),4,0)
+        self.tabZeroLayout.addWidget(cellsbox,4,1)
+
+        self.tabZeroLayout.addWidget(connectButton,5,0,1,3)
 
         return self.tabZeroLayout
 
@@ -474,18 +497,17 @@ class MainWindow(QWidget):
         self.tabSixLayout.addWidget(additionalInformationWidget, 0, 2)
         self.tabSixLayout.addWidget(activeCellFaultsWidget, 0, 3)
 
-        self.tabSixLayout.addWidget(QLabel("Code Symbol Legend:"), 1, 0)
-        self.tabSixLayout.addWidget(QLabel("(H) = Historical (Past Occurrence)\n(S) = Stored\n(A) = Active\n(F) = Freeze Frame Data Available"), 2, 0)
+        self.tabSixLayout.addWidget(QLabel("Code Symbol Legend:\n(H) = Historical (Past Occurrence)\n(S) = Stored\n(A) = Active\n(F) = Freeze Frame Data Available"), 1, 0)
 
         self.tabSixLayout.addWidget(self.exportCSV, 1, 2)
         self.tabSixLayout.addWidget(self.clearAllCodes, 4, 0, 1, 4)
 
-
+        '''
         button = PushButtonLE(text='Refresh')
         button.clicked.connect(self.displayErrorCodes)
 
         self.tabSixLayout.addWidget(button)
-
+        '''
         return self.tabSixLayout
 
     def makeTabTwo(self):
@@ -633,25 +655,22 @@ class MainWindow(QWidget):
         grouping.setLayout(groupingLayout)
 
 
+        self.cellDataArray = [ QTableWidget() for i in range(0, int((bmsValueTransfer.TOTAL_AD68 / 2) + 1)) ]
 
-        self.cellDataArray = [ QTableWidget() for i in range(0, 5) ]
+        #self.cellDataArray = [ QTableWidget() for i in range(0, 5) ]
 
-        for i in range(len(self.cellDataArray)):
+        for j in range(len(self.cellDataArray)):
 
-            self.cellDataArray[i].setColumnCount(15)
-            self.cellDataArray[i].setRowCount(2)
+            self.cellDataArray[j].setColumnCount(15)
+            self.cellDataArray[j].setRowCount(2)
 
-            self.cellDataArray[i].setHorizontalHeaderLabels(
+            self.cellDataArray[j].setHorizontalHeaderLabels(
                 ["Segment Voltage" if i == 0 else f"Cell {i}" for i in range(0, 15)]
             )
 
             #self.cellDataArray.setVerticalHeader()
 
-            self.cellDataArray[i].setEditTriggers(QAbstractItemView.NoEditTriggers)
-
-
-
-
+            self.cellDataArray[j].setEditTriggers(QAbstractItemView.NoEditTriggers)
 
 
         self.tabFourLayout.addWidget(grouping, 0, 0, 1, 3)
@@ -676,10 +695,23 @@ class MainWindow(QWidget):
         self.tabFourLayout.addWidget(stopDataRecording,6,2)
 
         return self.tabFourLayout
+    
+    def rebuildTabFour(self):
+        # Remove the old tab widget from the tab system
+        self.tabSystem.removeTab(4)
+
+        # Create a new widget and build the layout into it
+        newTab = QWidget()
+        self.tabs[4] = newTab
+        newTab.setLayout(self.makeTabFour())
+
+        # Re-insert it at the correct position
+        self.tabSystem.insertTab(4, newTab, "Live Cell Data")
+        #self.tabSystem.setCurrentIndex(4)
 
     def makeTabFive(self):
         global currentIndex
-
+        '''
         def testingDic():
             global fakeCan
 
@@ -687,7 +719,7 @@ class MainWindow(QWidget):
                     1763154300.375932)
             
             fakeCan["0xc0"][0][0] = '88'
-
+        '''
 
         self.tabFiveLayout = QGridLayout()
 
@@ -721,6 +753,7 @@ class MainWindow(QWidget):
         
         self.tabFiveLayout.addWidget(self.busTraffic,1,0)
 
+        '''        
         button = PushButtonLE(text='Refresh')
         button.clicked.connect(self.updateTraffic)
 
@@ -730,6 +763,7 @@ class MainWindow(QWidget):
         self.tabFiveLayout.addWidget(button)
 
         self.tabFiveLayout.addWidget(button2)
+        '''
 
         return self.tabFiveLayout
     
@@ -780,10 +814,10 @@ if __name__ == "__main__":
     app.setStyle('Fusion')
 
     if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
-        print('running in a PyInstaller bundle')
+        #print('running in a PyInstaller bundle')
         stylesheet = loadFile(sys._MEIPASS + "/styles.qss")
     else:
-        print('running in a normal Python process')
+        #print('running in a normal Python process')
         stylesheet = loadFile("dev/styles.qss")
 
     app.setStyleSheet(stylesheet)
