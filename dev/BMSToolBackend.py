@@ -6,15 +6,15 @@ class BMSValues:
     def __init__(self, TOTAL_AD68, TOTAL_CELLS):
 
         self.TOTAL_AD68              = TOTAL_AD68
-        self.TOTAL_CELLS             = TOTAL_CELLS     
-        self.BASE_CAN_ID             = 0xB000  
+        self.TOTAL_CELLS             = TOTAL_CELLS
+        self.BASE_CAN_ID             = 0xB000
 
         self.CELL_CAN_ID_BASE        = self.BASE_CAN_ID
         self.CELL_CAN_ID_MAX         = self.CELL_CAN_ID_BASE + self.TOTAL_AD68 * self.TOTAL_CELLS
         self.IC_CAN_ID_BASE          = self.CELL_CAN_ID_MAX #i.e. just BASE_CAN_ID + TOTAL_AD68 * TOTAL_CELLS
         self.IC_CAN_ID_MAX           = self.IC_CAN_ID_BASE + self.TOTAL_AD68
 
-        self.CHARGER_CONFIG_CAN_ID   = 0x1806E5F4  
+        self.CHARGER_CONFIG_CAN_ID   = 0x1806E5F4
 
     def convertAndSetValues(self, TOTAL_AD68, TOTAL_CELLS):
         TOTAL_AD68_int = None

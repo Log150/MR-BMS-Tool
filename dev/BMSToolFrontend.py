@@ -711,7 +711,7 @@ class MainWindow(QWidget):
 
     def makeTabFive(self):
         global currentIndex
-
+        '''
         def testingDic():
             global fakeCan
 
@@ -719,7 +719,7 @@ class MainWindow(QWidget):
                     1763154300.375932)
             
             fakeCan["0xc0"][0][0] = '88'
-
+        '''
 
         self.tabFiveLayout = QGridLayout()
 
