@@ -1,6 +1,7 @@
 import pyCandapter, can, signal, serial.tools.list_ports, serial.serialutil, struct
 from LE import *
 
+
 class BMSValues:
     
     def __init__(self, TOTAL_AD68, TOTAL_CELLS):

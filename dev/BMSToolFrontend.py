@@ -234,7 +234,7 @@ class MainWindow(QWidget):
         else:
             self.stopWorker()
 
-
+    '''
     def onDataReady(self, ic):
         print(f"onDataReady called, ic length: {len(ic) if ic else None}")
         
@@ -262,7 +262,55 @@ class MainWindow(QWidget):
 
         except (IndexError, TypeError, KeyError) as e:
             print(f"[ERROR] onDataReady failed: {e}")
+    '''
+    '''
+    def onDataReady(self, ic):
+        if ic is None:
+            print("[WARN] No data received")
+            return
+        try:
+            for i in range(0, int((bmsValueTransfer.TOTAL_AD68 / 2) + 1)):
+                
+                for row, (ic_dict, cells) in enumerate(ic):
+                    
+                    # Only update IC column if we got a valid ic_status
+                    if ic_dict.get('type') == 'ic_status':
+                        ic_val = f"{ic_dict['v_segment_V']:.3f}"
+                        self.cellDataArray[i].setItem(row, 0, QTableWidgetItem(ic_val))
 
+                    # Only update cell columns if we got valid cell data
+                    for col, cell in enumerate(cells, start=1):
+                        if cell.get('type') == 'cell':
+                            cell_val = f"{cell['voltage_V']:.3f}"
+                            self.cellDataArray[i].setItem(row, col, QTableWidgetItem(cell_val))
+
+                self.cellDataArray[i].viewport().update()
+
+        except (IndexError, TypeError, KeyError) as e:
+            print(f"[ERROR] onDataReady failed: {e}")
+    '''
+
+    def onDataReady(self, ic):
+        if ic is None:
+            print("[WARN] No data received")
+            return
+        try:
+            for i in range(0, int((bmsValueTransfer.TOTAL_AD68 / 2) + 1)):
+                ic_dict, cells = ic[i]  # directly index, no slice needed
+
+                if ic_dict.get('type') == 'ic_status':
+                    ic_val = f"{ic_dict['v_segment_V']:.3f}"
+                    self.cellDataArray[i].setItem(0, 0, QTableWidgetItem(ic_val))
+
+                for col, cell in enumerate(cells, start=1):
+                    if cell.get('type') == 'cell':
+                        cell_val = f"{cell['voltage_V']:.3f}"
+                        self.cellDataArray[i].setItem(0, col, QTableWidgetItem(cell_val))
+
+                self.cellDataArray[i].viewport().update()
+
+        except (IndexError, TypeError, KeyError) as e:
+            print(f"[ERROR] onDataReady failed: {e}")
 
 
     def makeGraph(self):
@@ -690,9 +738,9 @@ class MainWindow(QWidget):
         stopDataRecording.setIcon(stopDataRecording.style().standardIcon(QStyle.SP_MediaStop))
         #exportLiveCellValues.clicked.connect()
 
-        self.tabFourLayout.addWidget(exportLiveCellValues,6,0)
-        self.tabFourLayout.addWidget(recordData,6,1)
-        self.tabFourLayout.addWidget(stopDataRecording,6,2)
+        #self.tabFourLayout.addWidget(exportLiveCellValues,6,0)
+        #self.tabFourLayout.addWidget(recordData,6,1)
+        #self.tabFourLayout.addWidget(stopDataRecording,6,2)
 
         return self.tabFourLayout
     
