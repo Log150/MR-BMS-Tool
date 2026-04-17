@@ -5,7 +5,7 @@ import serial, serial.serialutil
 class pyCandapter:
     def __init__(self, port, baudrate = 9600) -> None:
         try:
-            self.device = serial.Serial(port=port, baudrate=baudrate, timeout=None)
+            self.device = serial.Serial(port=port, baudrate=baudrate, timeout=2)
             print(f"[INFO] Connected to {port} at {baudrate} baud.")
         except serial.serialutil.SerialException as e:
             print(f"[ERROR] Could not open port {port}: {e}")
@@ -52,6 +52,8 @@ class pyCandapter:
 
     def readCANMessage(self,filterID=None) -> can.Message:
         message = self.device.read_until(b'\r').decode('utf-8') #This is in the format Tiiilddddddddddddddd\r
+        raw = self.device.read_until(b'\r')
+        print(f"[DEBUG] raw bytes: {raw!r}")        
 
         # frame_type = message[0]  # 't', 'T', 'r', or 'R'
         
