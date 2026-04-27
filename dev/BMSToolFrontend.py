@@ -473,15 +473,15 @@ class MainWindow(QWidget):
             self.canBaud = items.get(baudSelect.currentText())
             self.SERIALBAUDRATE = 9600
 
-            try:
-                self.candapter = pyCandapter.pyCandapter(self.comPort, self.SERIALBAUDRATE)
-                self.candapter.openCANBus(self.canBaud)
-                print("Connected to CAN bus.")
-                
+            try:   
                 bmsValueTransfer.convertAndSetValues( ad68box.toPlainText() , cellsbox.toPlainText() )
 
                 self.rebuildTabFour()
                 self.tabFourLayout.update()
+
+                self.candapter = pyCandapter.pyCandapter(self.comPort, self.SERIALBAUDRATE)
+                self.candapter.openCANBus(self.canBaud)
+                print("Connected to CAN bus.")
 
             except Exception as e:
                 QMessageBox.critical(self, "Connection Error", str(e))
@@ -686,34 +686,38 @@ class MainWindow(QWidget):
         groupingLayout.addWidget(packVoltage, 2, 2)
         groupingLayout.addWidget(currentLimits, 3, 2)
 
-        liveCellRadio = QRadioButton("Live Cell Voltages")
-        openCellRadio = QRadioButton("Open Cell Voltages")
+        # liveCellRadio = QRadioButton("Live Cell Voltages")
+        # openCellRadio = QRadioButton("Open Cell Voltages")
         
-        self.typeOfDataGroup = QButtonGroup()
+        # self.typeOfDataGroup = QButtonGroup()
 
-        self.typeOfDataGroup.addButton(liveCellRadio)
-        self.typeOfDataGroup.addButton(openCellRadio)
+        # self.typeOfDataGroup.addButton(liveCellRadio)
+        # self.typeOfDataGroup.addButton(openCellRadio)
 
-        groupingLayout.addWidget(liveCellRadio, 0, 3)
-        groupingLayout.addWidget(openCellRadio, 1, 3)
+        # groupingLayout.addWidget(liveCellRadio, 0, 3)
+        # groupingLayout.addWidget(openCellRadio, 1, 3)
 
-        liveCellRadio.setChecked(True)
+        # liveCellRadio.setChecked(True)
 
 
         grouping.setLayout(groupingLayout)
 
+        grouping.setMaximumHeight(150)
 
-        self.cellDataArray = [ QTableWidget() for i in range(0, int((bmsValueTransfer.TOTAL_AD68 / 2) + 1)) ]
+
+        self.cellDataArray = [ QTableWidget() for i in range(0, int((bmsValueTransfer.TOTAL_AD68 / 2))) ]
 
         #self.cellDataArray = [ QTableWidget() for i in range(0, 5) ]
 
         for j in range(len(self.cellDataArray)):
 
-            self.cellDataArray[j].setColumnCount(15)
+            self.cellDataArray[j].setColumnCount(bmsValueTransfer.TOTAL_CELLS + 1)
             self.cellDataArray[j].setRowCount(2)
+            self.cellDataArray[j].setMaximumHeight(125)
+
 
             self.cellDataArray[j].setHorizontalHeaderLabels(
-                ["Segment Voltage" if i == 0 else f"Cell {i}" for i in range(0, 15)]
+                ["Segment Voltage" if i == 0 else f"Cell {i}" for i in range(0, bmsValueTransfer.TOTAL_CELLS + 1)]
             )
 
             #self.cellDataArray.setVerticalHeader()
@@ -738,9 +742,9 @@ class MainWindow(QWidget):
         stopDataRecording.setIcon(stopDataRecording.style().standardIcon(QStyle.SP_MediaStop))
         #exportLiveCellValues.clicked.connect()
 
-        #self.tabFourLayout.addWidget(exportLiveCellValues,6,0)
-        #self.tabFourLayout.addWidget(recordData,6,1)
-        #self.tabFourLayout.addWidget(stopDataRecording,6,2)
+        self.tabFourLayout.addWidget(exportLiveCellValues,(bmsValueTransfer.TOTAL_CELLS + 4),0)
+        self.tabFourLayout.addWidget(recordData,(bmsValueTransfer.TOTAL_CELLS + 4),1)
+        self.tabFourLayout.addWidget(stopDataRecording,(bmsValueTransfer.TOTAL_CELLS + 4),2)
 
         return self.tabFourLayout
     
@@ -862,6 +866,14 @@ if __name__ == "__main__":
     app.setStyle('Fusion')
 
     if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+
+        try:
+            import pyi_splash
+            pyi_splash.update_text("Loading...")
+            pyi_splash.close()
+        except ImportError:
+            pass  # Not running from a PyInstaller bundle
+        
         #print('running in a PyInstaller bundle')
         stylesheet = loadFile(sys._MEIPASS + "/styles.qss")
     else:
