@@ -1,0 +1,46 @@
+name: Build BMSTool
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Build with PyInstaller
+        run: |
+          python -m PyInstaller --onefile --windowed --name BMSTool `
+            --add-data "styles.qss;." `
+            --splash splash.png `
+            --hidden-import PyQt5 `
+            --hidden-import PyQt5.QtCore `
+            --hidden-import PyQt5.QtGui `
+            --hidden-import PyQt5.QtWidgets `
+            --hidden-import pyqtgraph `
+            --hidden-import pyqtgraph.graphicsItems `
+            --hidden-import can `
+            --hidden-import can.interfaces.serial `
+            --hidden-import serial `
+            --hidden-import struct `
+            --hidden-import time `
+            BMSToolFrontend.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BMSTool
+          path: dist/BMSTool.exe
