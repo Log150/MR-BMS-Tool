@@ -1,6 +1,6 @@
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
-from PyQt5.QtCore import *
+from PySide6.QtWidgets import *
+from PySide6.QtGui import *
+from PySide6.QtCore import *
 
 #LE = Logan Edition
 class TextEditLE(QTextEdit):
@@ -34,7 +34,7 @@ class PushButtonLE(QPushButton):
 class GroupBoxLE(QGroupBox):
     # allows GroupBox to be clicked like a buttton
     
-    clicked = pyqtSignal()
+    clicked = Signal()
 
     def __init__(self, text, clicked=None, parent=None):
         super().__init__(text, parent)

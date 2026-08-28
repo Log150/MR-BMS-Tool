@@ -1,6 +1,6 @@
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
-from PyQt5.QtCore import *
+from PySide6.QtWidgets import *
+from PySide6.QtGui import *
+from PySide6.QtCore import *
 from pyqtLE import *
 from BMSToolBackend import *
 from BMSToolCANWorker import *
@@ -635,6 +635,8 @@ class MainWindow(QWidget):
 
             newTextInput = TextEditLE()
             newTextInput.setObjectName(ConfigValues[i] + "_TextEdit")
+            
+            #newTextInput.clicked.connect(lambda: newCheckbox.setChecked(True))
 
             self.checkboxes.append(newCheckbox)
             self.configTextinputs.append(newTextInput)
