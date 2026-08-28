@@ -57,11 +57,11 @@ class MainWindow(QWidget):
 
 
         tabNames = ["Battery Profile",
-                    "Diagnostic Trouble Codes",
+                    "Charging/Config",
                     "Live Text Data",
                     "Live Graph/Data Logging",
                     "Live Cell Data",
-                    "Live CANBUS Traffic"]
+                    "Diagnostic Trouble Codes"]
 
         self.tabSystem = QTabWidget()
 
@@ -487,6 +487,9 @@ class MainWindow(QWidget):
                 QMessageBox.critical(self, "Connection Error", str(e))
                 self.candapter = None
 
+            else:
+                QMessageBox.information(self, "Success", "Successfully connected to the CAN bus.")
+
 
         connectButton.clicked.connect(connectToCAN)
 
@@ -510,53 +513,167 @@ class MainWindow(QWidget):
     def makeTabOne(self):
         global currentIndex
 
-        self.tabSixLayout = QGridLayout()
+        self.tabOneLayout = QGridLayout()
+
+        chargeBalanceGroup = GroupBoxLE("Charging/Balance")
+        chargeBalanceGroupingLayout = QGridLayout()
+
+        def removeCheckmarks(checkboxes):
+            for i in checkboxes:
+                i.setChecked(False)
 
         self.index = 1
 
+        self.checkboxes = []
+        self.configTextinputs = []
+
+        configGroup = GroupBoxLE("Config")
+        configGroupingLayout = QGridLayout()
 
 
-        self.troubleCodeArea = QVBoxLayout()
-
-        troubleCodeWidget = QWidget()
-        troubleCodeWidget.setObjectName("troubleCodeWidget")
-        troubleCodeWidget.setLayout(self.troubleCodeArea)
+        cellDataGroup = GroupBoxLE("Cell Data")
+        cellDataGroupingLayout = QGridLayout()
 
 
-        self.additionalInformationArea = QVBoxLayout()
+        sendChargeButton = PushButtonLE("SEND TO BMS")
 
-        additionalInformationWidget = QWidget()
-        additionalInformationWidget.setObjectName("additionalInformationWidget")
-        additionalInformationWidget.setLayout(self.additionalInformationArea)
-
-
-        self.activeCellFaultsArea = QVBoxLayout()
-
-        activeCellFaultsWidget = QWidget()
-        activeCellFaultsWidget.setObjectName("activeCellFaultsWidget")
-        activeCellFaultsWidget.setLayout(self.activeCellFaultsArea)
+        defaultChargeID = TextEditLE()
+        defaultChargeID.setPlainText("0x16086420")
 
 
-        self.exportCSV = PushButtonLE("Export Additional Information (CSV)")
-        self.clearAllCodes = PushButtonLE("Clear All Codes")
+        self.messageSendRadioGroup = QButtonGroup()
 
-        self.tabSixLayout.addWidget(troubleCodeWidget, 0, 0)
-        self.tabSixLayout.addWidget(QLabel("==>"), 0, 1)
-        self.tabSixLayout.addWidget(additionalInformationWidget, 0, 2)
-        self.tabSixLayout.addWidget(activeCellFaultsWidget, 0, 3)
 
-        self.tabSixLayout.addWidget(QLabel("Code Symbol Legend:\n(H) = Historical (Past Occurrence)\n(S) = Stored\n(A) = Active\n(F) = Freeze Frame Data Available"), 1, 0)
 
-        self.tabSixLayout.addWidget(self.exportCSV, 1, 2)
-        self.tabSixLayout.addWidget(self.clearAllCodes, 4, 0, 1, 4)
+        self.radioChargeButton = QRadioButton("Charge")
+        self.radioChargeButton.clicked.connect(lambda: removeCheckmarks(self.checkboxes))
+
+        self.radioBalanceButton = QRadioButton("Balance")
+        self.radioBalanceButton.clicked.connect(lambda: removeCheckmarks(self.checkboxes))
+
+        self.radioConfigButton = QRadioButton("Config")
+
+
+
+        self.messageSendRadioGroup.addButton(self.radioChargeButton)
+        self.messageSendRadioGroup.addButton(self.radioBalanceButton)
+        self.messageSendRadioGroup.addButton(self.radioConfigButton)
+
 
         '''
-        button = PushButtonLE(text='Refresh')
-        button.clicked.connect(self.displayErrorCodes)
-
-        self.tabSixLayout.addWidget(button)
+        BALANCING THRESHOLD
+        MIN VOLTAGE
+        MAX VOLTAGE
+        MIN CURRENT
+        MAX CURRENT
+        MAX TEMP
+        MIN TEMP
+        MAX IC TEMP
+        MIN IC TEMP
+        DEBUG VOLTAGE
+        DEBUG AUX
+        DEBUG CURRENT
+        DEBUG MASTER MEASUREMENTS
+        
+        ENABLE BALANCING
         '''
-        return self.tabSixLayout
+
+        #canID = 0x123
+        canData = [0, 1, 2, 3, 4, 5, 6, 7]
+
+        ConfigValues = ["BALANCING THRESHOLD",
+        "MIN VOLTAGE",
+        "MAX VOLTAGE",
+        "MIN CURRENT",
+        "MAX CURRENT",
+        "MAX TEMP",
+        "MIN TEMP",
+        "MAX IC TEMP",
+        "MIN IC TEMP",
+        "DEBUG VOLTAGE",
+        "DEBUG AUX",
+        "DEBUG CURRENT",
+        "DEBUG MASTER MEASUREMENTS"]
+
+
+        resistanceHigh = QLabel(f"Highest Resistance: {None}")
+        resistanceLow = QLabel(f"Lowest Resistance: {None}")
+        resistanceAvg = QLabel(f"Avg Cell Resistance: {None}")
+        resistanceDelta = QLabel(f"Delta Cell Resistance: {None}")
+        cellDataGroupingLayout.addWidget(resistanceHigh, 0, 0)
+        cellDataGroupingLayout.addWidget(resistanceLow, 1, 0)
+        cellDataGroupingLayout.addWidget(resistanceAvg, 2, 0)
+        cellDataGroupingLayout.addWidget(resistanceDelta, 3, 0)
+
+        voltageHigh = QLabel(f"Highest Cell Volt: {None}")
+        voltageLow = QLabel(f"Lowest Cell Volt: {None}")
+        voltageAvg = QLabel(f"Avg Cell Volt: {None}")
+        voltageDelta = QLabel(f"Delta Cell Volt: {None}")
+        cellDataGroupingLayout.addWidget(voltageHigh, 0, 1)
+        cellDataGroupingLayout.addWidget(voltageLow, 1, 1)
+        cellDataGroupingLayout.addWidget(voltageAvg, 2, 1)
+        cellDataGroupingLayout.addWidget(voltageDelta, 3, 1)
+
+        packSOC = QLabel(f"Pack SOC: {None}")
+        packCurrent = QLabel(f"Pack Current: {None}")
+        packVoltage = QLabel(f"Pack Voltage: {None}")
+        currentLimits = QLabel(f"Current Limits: {None}")
+        cellDataGroupingLayout.addWidget(packSOC, 0, 2)
+        cellDataGroupingLayout.addWidget(packCurrent, 1, 2)
+        cellDataGroupingLayout.addWidget(packVoltage, 2, 2)
+        cellDataGroupingLayout.addWidget(currentLimits, 3, 2)
+
+
+        cellDataGroup.setLayout(cellDataGroupingLayout)
+        self.tabOneLayout.addWidget(cellDataGroup, 0, 0, 1, 3)
+
+
+        for i in range(0,len(ConfigValues)):
+            newCheckbox = QCheckBox(ConfigValues[i] + ":")
+            newCheckbox.setObjectName(ConfigValues[i] + "_Checkbox")
+            newCheckbox.clicked.connect(lambda: self.radioConfigButton.setChecked(True))
+
+            newTextInput = TextEditLE()
+            newTextInput.setObjectName(ConfigValues[i] + "_TextEdit")
+
+            self.checkboxes.append(newCheckbox)
+            self.configTextinputs.append(newTextInput)
+
+
+        chargeBalanceGroupingLayout.addWidget(self.radioChargeButton, 0, 0, 1, 2)
+        chargeBalanceGroupingLayout.addWidget(self.radioBalanceButton, 0, 2, 1, 2)
+
+
+        chargeBalanceGroup.setLayout(chargeBalanceGroupingLayout)
+        self.tabOneLayout.addWidget(chargeBalanceGroup, 0, 3, 1, 2)
+
+
+        flipswitch = True
+        for i in range(0, len(self.checkboxes)):
+            configGroupingLayout.addWidget(self.checkboxes[i],
+                                        3 + i if flipswitch else 2 + i,
+                                        0 if flipswitch else 2)
+
+            configGroupingLayout.addWidget(self.configTextinputs[i],
+                                        3 + i if flipswitch else 2 + i,
+                                        1 if flipswitch else 4)
+            
+            flipswitch = (not flipswitch)
+
+        
+        sendChargeButton.clicked.connect(lambda _, canID=int(defaultChargeID.toPlainText(), 16): sendToCANbus(self.candapter, canID, canData, True))
+
+
+        configGroup.setLayout(configGroupingLayout)
+        self.tabOneLayout.addWidget(configGroup, 1, 0, 1, 5)
+
+
+        self.tabOneLayout.addWidget(QLabel("ID: "), 16, 0)
+        self.tabOneLayout.addWidget(defaultChargeID, 16, 1, 1, 4)
+
+        self.tabOneLayout.addWidget(sendChargeButton, 17, 0, 1, 5)
+
+        return self.tabOneLayout
 
     def makeTabTwo(self):
         global currentIndex
@@ -566,14 +683,14 @@ class MainWindow(QWidget):
         self.index = 2
 
         parameterUnit = [
-                        ("Pack State of Charge (SOC)","%"),            # 0x6B0 Byte4
-                        ("Pack Discharge Current Limit (DCL)","A"),    # 0x6B1 Byte0 
+                        ("Pack State of Charge (SOC)","%"),            # 
+                        ("Pack Discharge Current Limit (DCL)","A"),    # 
                         ("Pack Charge Current Limit (CCL)","A"),       # 
-                        ("Lowest Cell Voltage","V"),                   # 0x6B2 Byte2
-                        ("Highest Cell Voltage","V"),                  # 0x6B2 Byte0
-                        ("Highest Battery Temp","C"),                  # 0x6B1 Byte4
-                        ("Lowest Battery Temp","C"),                   # 0x6B1 Byte5
-                        ("Pack Amperage (Current)","A"),               # 0x6B0 Byte0
+                        ("Lowest Cell Voltage","V"),                   # 
+                        ("Highest Cell Voltage","V"),                  # 
+                        ("Highest Battery Temp","C"),                  # 
+                        ("Lowest Battery Temp","C"),                   # 
+                        ("Pack Amperage (Current)","A"),               # 
                         ("Average Pack Amperage","A"),                 # 
                         ("Pack Voltage","V"),                          # 
                         ("Power Supply (lower than actual)","V"),      # 
@@ -584,7 +701,7 @@ class MainWindow(QWidget):
                         ("Discharge-Enabled Output Active",""),        # 
                         ("Errors Present",""),                         # 
                         ("Is Pack Balancing",""),                      # 
-                        ("Time Since Power-On","Sec"),                 # 0x64C
+                        ("Time Since Power-On","Sec"),                 # 
                         ("Time Since Faults Cleared","Min")            # 
                         ]
 
@@ -763,60 +880,53 @@ class MainWindow(QWidget):
 
     def makeTabFive(self):
         global currentIndex
-        '''
-        def testingDic():
-            global fakeCan
-
-            fakeCan["0xa5"] = (['88', '00', '00', '00', '00', '01', '00', '00'], 
-                    1763154300.375932)
-            
-            fakeCan["0xc0"][0][0] = '88'
-        '''
 
         self.tabFiveLayout = QGridLayout()
 
-        self.index = 5
+        self.index = 1
 
-        self.busTraffic = QTableWidget()
 
-        self.busTraffic.setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContents)
 
-        self.busTraffic.setColumnCount(12)
-        self.busTraffic.setRowCount(1)
+        self.troubleCodeArea = QVBoxLayout()
 
-        self.busTraffic.setHorizontalHeaderLabels(
-            [
-                "ID",
-                "Length",
-                "Byte0",
-                "Byte1",
-                "Byte2",
-                "Byte3",
-                "Byte4",
-                "Byte5",
-                "Byte6",
-                "Byte7",
-                "Count",
-                "Timestamp"
-            ]
-        )
+        troubleCodeWidget = QWidget()
+        troubleCodeWidget.setObjectName("troubleCodeWidget")
+        troubleCodeWidget.setLayout(self.troubleCodeArea)
 
-        self.busTraffic.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        
-        self.tabFiveLayout.addWidget(self.busTraffic,1,0)
 
-        '''        
-        button = PushButtonLE(text='Refresh')
-        button.clicked.connect(self.updateTraffic)
+        self.additionalInformationArea = QVBoxLayout()
 
-        button2 = PushButtonLE(text='Change Placeholders')
-        button2.clicked.connect(lambda: testingDic())
+        additionalInformationWidget = QWidget()
+        additionalInformationWidget.setObjectName("additionalInformationWidget")
+        additionalInformationWidget.setLayout(self.additionalInformationArea)
 
-        self.tabFiveLayout.addWidget(button)
 
-        self.tabFiveLayout.addWidget(button2)
+        self.activeCellFaultsArea = QVBoxLayout()
+
+        activeCellFaultsWidget = QWidget()
+        activeCellFaultsWidget.setObjectName("activeCellFaultsWidget")
+        activeCellFaultsWidget.setLayout(self.activeCellFaultsArea)
+
+
+        self.exportCSV = PushButtonLE("Export Additional Information (CSV)")
+        self.clearAllCodes = PushButtonLE("Clear All Codes")
+
+        self.tabFiveLayout.addWidget(troubleCodeWidget, 0, 0)
+        self.tabFiveLayout.addWidget(QLabel("==>"), 0, 1)
+        self.tabFiveLayout.addWidget(additionalInformationWidget, 0, 2)
+        self.tabFiveLayout.addWidget(activeCellFaultsWidget, 0, 3)
+
+        self.tabFiveLayout.addWidget(QLabel("Code Symbol Legend:\n(H) = Historical (Past Occurrence)\n(S) = Stored\n(A) = Active\n(F) = Freeze Frame Data Available"), 1, 0)
+
+        self.tabFiveLayout.addWidget(self.exportCSV, 1, 2)
+        self.tabFiveLayout.addWidget(self.clearAllCodes, 4, 0, 1, 4)
+
         '''
+        button = PushButtonLE(text='Refresh')
+        button.clicked.connect(self.displayErrorCodes)
 
+        self.tabSixLayout.addWidget(button)
+        '''
         return self.tabFiveLayout
     
     '''
@@ -884,6 +994,6 @@ if __name__ == "__main__":
     
     window = MainWindow()
     
-    window.show()
+    window.showMaximized()
 
     sys.exit(app.exec())
