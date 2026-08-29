@@ -5,8 +5,11 @@ from PySide6.QtCore import *
 #LE = Logan Edition
 class TextEditLE(QTextEdit):
     # Allows for pressing Enter/Return to take you to the next option
+    # Also allows triggering on click
 
-    def __init__(self, parent=None):
+    clicked = Signal()
+
+    def __init__(self, clicked=None, parent=None):
         super().__init__(parent)
         self.setMaximumHeight(27)
         self.setTabChangesFocus(True)
@@ -19,6 +22,10 @@ class TextEditLE(QTextEdit):
             event.ignore()
         else: 
             super().keyPressEvent(event)
+
+    def mousePressEvent(self, event):
+        self.clicked.emit()
+        super().mousePressEvent(event)
 
 class PushButtonLE(QPushButton):
     # Quick fix for TextEditLE not liking the default Focus Policy

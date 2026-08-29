@@ -636,7 +636,8 @@ class MainWindow(QWidget):
             newTextInput = TextEditLE()
             newTextInput.setObjectName(ConfigValues[i] + "_TextEdit")
             
-            #newTextInput.clicked.connect(lambda: newCheckbox.setChecked(True))
+            newTextInput.clicked.connect(lambda currentCheckbox=newCheckbox: currentCheckbox.setChecked(True))
+            newTextInput.clicked.connect(lambda: self.radioConfigButton.setChecked(True))
 
             self.checkboxes.append(newCheckbox)
             self.configTextinputs.append(newTextInput)
