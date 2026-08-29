@@ -1,0 +1,40 @@
+BMS Functionality and Specifications
+
+The Battery Management System has four core responsibilities: monitor the voltage and temperature of each cell, perform balancing, and monitor power output. Voltage monitoring and cell balancing is done via voltage taps, temperature is done via thermistor and pullup resistors. Power output is calculated from pack voltage and output current. 
+
+Core functions:
+1: Monitor the voltage of each cell and relay that value back to the ECU via CAN bus
+2: Monitor temperature of each cell and relay that value back to the ECU via CAN bus
+3: Perform balancing as directed by the ECU
+	-ECU will output a binary on or off via CAN bus
+	-BMS will then determine if balancing is needed via voltage delta and hysteresis
+4: BMS will output a binary on or off on IO pin that functions as a safety interlock
+	-Logic high is safe, logic low is shutdown
+	-state will be determined by pack SOC and temperature
+
+Primary CAN Outputs:
+1: Balancing State (on or off)
+2: Highest cell voltage (V)
+3: Lowest cell voltage (V)
+4: Average cell voltage (V)
+5: Highest cell temperature (C)
+6: Lowest cell temperature (C)
+7: Average cell temperature (C)
+8: BMS Chip temperature
+
+Secondary CAN Outputs
+1: Every cell voltage, 0-140, with some way to index them (V)
+2: Every cell temperature, 0-100, with some way to index them (C)
+
+Configurable Parameters:
+1: Begin balancing voltage
+2: Stop balancing voltage
+3: Max cell voltage
+4: Min cell voltage
+5: Thermal safety cutoff temperature
+6: Balancing voltage hysteresis
+
+Nice-to-haves:
+1: A way to slow balancing. Think of this as balancing PWM, that can be manually specified or have one axis dependent on BMS die temperature
+2: Cell voltage and temperature logging. This would require we add some form of memory to the chip
+3: A gui of some form that reads from CAN

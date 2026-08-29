@@ -1,10 +1,10 @@
-from PyQt5.QtCore import QThread, pyqtSignal
+from PySide6.QtCore import QThread, Signal
 from BMSToolBackend import *
 
 class CANWorker(QThread):
-    formattedDataReady = pyqtSignal(object)  # emits ic data when done
-    decodedDataReady = pyqtSignal(object)
-    error = pyqtSignal(str)
+    formattedDataReady = Signal(object)  # emits ic data when done
+    decodedDataReady = Signal(object)
+    error = Signal(str)
 
     def __init__(self, candapter, msgLen=29):
         super().__init__()

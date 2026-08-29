@@ -1,0 +1,98 @@
+Com: COM4
+ serial: 9600
+ baudrate: 1000000
+[INFO] Connected to COM4 at 9600 baud.
+Sent: 'C' | Got: b'\x07' | Hex: 07
+Sent: 'S8' | Got: b'\x06' | Hex: 06
+Sent: 'O' | Got: b'\x06' | Hex: 06
+Raw bytes: b'x0000B06280000000000000000\r'
+Timestamp: 1773786135.876792    ID:      000    S Rx                DL:  0
+Raw bytes: b'x0000B000820060C0000000000\r'
+Timestamp: 1773786135.880038    ID:      000    S Rx                DL:  0
+Raw bytes: b'x0000B00181806040000000000\r'
+Timestamp: 1773786135.892585    ID:      000    S Rx                DL:  0
+Raw bytes: b'x0000B00281906050000000000\r'
+Timestamp: 1773786135.894580    ID:      000    S Rx                DL:  0
+Raw bytes: b'x0000B00381406000000000000\r'
+Timestamp: 1773786135.896541    ID:      000    S Rx                DL:  0
+Sent: 'C' | Got: b'x' | Hex: 78
+Timestamp: 1773786135.876792    ID:      000    S Rx                DL:  0
+Timestamp: 1773786135.880038    ID:      000    S Rx                DL:  0
+Timestamp: 1773786135.892585    ID:      000    S Rx                DL:  0
+Timestamp: 1773786135.894580    ID:      000    S Rx                DL:  0
+Timestamp: 1773786135.896541    ID:      000    S Rx                DL:  0
+[{'id': '0x0', 'data': [], 'timestamp': 1773786135.8767924}, {'id': '0x0', 'data': [], 'timestamp': 1773786135.8800383}, {'id': '0x0', 'data': [], 'timestamp': 1773786135.8925848}, {'id': '0x0', 'data': [], 'timestamp': 1773786135.8945796}, {'id': '0x0', 'data': [], 'timestamp': 1773786135.8965406}]
+PS C:\Users\Logan\Documents\Racing\BMS-Tool>
+
+
+
+[
+    can.Message(
+        timestamp=1773786416.4239476, 
+        arbitration_id=0x0, 
+        is_extended_id=False, 
+        dlc=0, 
+        data=[]
+    ), 
+
+
+    can.Message(
+        timestamp=1773786416.4299567, 
+        arbitration_id=0x0, 
+        is_extended_id=False, 
+        dlc=0, 
+        data=[]
+    ), 
+
+
+    can.Message(
+        timestamp=1773786416.433929, 
+        arbitration_id=0x0, 
+        is_extended_id=False, 
+        dlc=0, 
+        data=[]
+    ), 
+
+
+    can.Message(
+        timestamp=1773786416.436379, 
+        arbitration_id=0x0, 
+        is_extended_id=False, 
+        dlc=0, 
+        data=[]
+    ), 
+
+
+    can.Message(
+        timestamp=1773786416.4384725, 
+        arbitration_id=0x0, 
+        is_extended_id=False, 
+        dlc=0, 
+        data=[]
+    )
+    
+]
+
+
+    def readCANMessageOld(self,filterID=None) -> can.Message:
+        message = self.device.read_until(b'\r').decode('utf-8') #This is in the format Tiiilddddddddddddddd\r
+        messageID = int(message[1:4], 16)
+        messageLength = int(message[4])
+        messageDataArr = []
+        for i in range(messageLength):
+            messageDataArr.append(int(message[5 + 2*i :5 + 2*i + 2], 16))
+        timeStamp = time.time()
+
+        #-----------------------
+        # modifyed from original
+        CANMessage = None
+        if filterID != None:
+            
+            if messageID in filterID:
+                CANMessage = (can.Message(arbitration_id=messageID, data=messageDataArr, is_extended_id=True, timestamp=timeStamp))
+        
+        else:
+            CANMessage = (can.Message(arbitration_id=messageID, data=messageDataArr, is_extended_id=True, timestamp=timeStamp))
+
+        return CANMessage
+        #-----------------------

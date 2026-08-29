@@ -66,8 +66,8 @@ def readCANbus(candapter,ID):
 
 
 
-def sendToCANbus(candapter):
-    message = can.Message(arbitration_id=0x123, data=[0, 1, 2, 3, 4, 5, 6, 7], is_extended_id=False)
+def sendToCANbus(candapter, id, data, extended_id):
+    message = can.Message(arbitration_id=id, data=data, is_extended_id=extended_id)
     candapter.sendCANMessage(message)
 
 

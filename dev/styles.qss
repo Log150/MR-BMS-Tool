@@ -194,6 +194,12 @@ QWidget#activeCellFaultsWidget {
     
 }
 
+QLabel#chargeLabel {
+    font-size: 18px;
+}
+QLabel#balanceLabel {
+    font-size: 18px;
+}
 
 QWidget#BusSpeedRadioButtons {
     min-width: 31.5em;
