@@ -43,7 +43,7 @@ class MainWindow(QWidget):
         
         super().__init__()
 
-        versionNumber = "Beta"
+        versionNumber = "0.1.0"
 
         self.setWindowTitle(f'MR BMS Tool {versionNumber}')
 
@@ -460,6 +460,8 @@ class MainWindow(QWidget):
             baudRates[3]: 1_000_000
         }
 
+        baudSelect.setCurrentIndex(2)
+
         connectButton = PushButtonLE("Connect")
 
         ad68box = TextEditLE()
@@ -513,14 +515,132 @@ class MainWindow(QWidget):
     def makeTabOne(self):
         global currentIndex
 
+        self.isCharging = False
+        self.isBalancing = False
+
         self.tabOneLayout = QGridLayout()
 
         chargeBalanceGroup = GroupBoxLE("Charging/Balance")
         chargeBalanceGroupingLayout = QGridLayout()
 
+        def whatIsChecked(checkboxes):
+            checkedBoxed = {}
+
+            try:
+                
+                for i in checkboxes:
+
+                    if i.isChecked():
+                        foundChild = configGroup.findChild(TextEditLE, name=(i.objectName() + "_TextEdit"))
+
+                        if foundChild.toPlainText().strip() != "":
+                            checkedBoxed[checkboxes.index(i)] = int(foundChild.toPlainText())
+
+            except Exception as e:
+                QMessageBox.critical(self, "Error", str(e))
+
+            return checkedBoxed
+
+
         def removeCheckmarks(checkboxes):
             for i in checkboxes:
                 i.setChecked(False)
+
+        def selectWhatToSend(candapter, canID, currentRadio):
+            userFriendlyMessage = ""
+            userMessageType = None
+
+            canData = []
+
+            # Wrap a try catch for when not connected to canbus
+
+            match currentRadio:
+                case -2:
+                    self.isCharging = (not self.isCharging)
+
+                    if self.isCharging:
+                        canData = [0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00] # Charge on
+                        print("Charging")
+                        userFriendlyMessage = "Charging enabled"
+
+                    else:
+                        canData = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00] # Charge off
+                        print("NOT Charging")
+                        userFriendlyMessage = "Charging disabled"
+                    
+                case -3:
+                    self.isBalancing = (not self.isBalancing)
+
+                    if self.isBalancing:
+                        canData = [0x0D, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00] # Balance on
+                        print("Balancing")
+                        userFriendlyMessage = "Balancing enabled"
+
+                    else:
+                        canData = [0x0D, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00] # Balance off
+                        print("NOT Balancing")
+                        userFriendlyMessage = "Balancing disabled"
+                        
+                case -4:
+                    try:
+                        print("Config")
+
+                        canData = []
+                        
+                        checkedDict = whatIsChecked(self.checkboxes)
+
+                        #print(checkedDict)
+
+                        if len(checkedDict) <= 0:
+                            raise Exception("You cannot configure zero items.\nPlease select a config option to continue.") 
+
+                        elif len(checkedDict) > 4:
+                            bigCheckedList = []
+
+                            for i in checkedDict:
+                            
+                                bigCheckedList.append(i)
+
+                                bigCheckedList.append(checkedDict[i])
+
+                            #print(bigCheckedList)
+
+
+                            canData.append(bigCheckedList[:8])
+
+                            canData.append(bigCheckedList[8:16])
+
+                            canData.append(bigCheckedList[16:24])
+                            
+                            canData.append(bigCheckedList[24:])
+
+                        else:
+
+                            for i in checkedDict:
+
+                                canData.append(i)
+
+                                canData.append(checkedDict[i])
+
+                        print(canData)
+
+                    except Exception as e:
+                        QMessageBox.critical(self, "Configuration Error", str(e))
+                    
+                case _:
+                    print("Invalid")
+
+            #print(canID)
+
+            if len(canData) > 0:
+                try:
+                    sendToCANbus(candapter, canID, canData, True)
+
+                except Exception as e:
+                    QMessageBox.critical(self, "CAN Error", str(e))
+
+                else:
+                    QMessageBox.information(self, "Success", userFriendlyMessage)
 
         self.index = 1
 
@@ -578,8 +698,7 @@ class MainWindow(QWidget):
         ENABLE BALANCING
         '''
 
-        #canID = 0x123
-        canData = [0, 1, 2, 3, 4, 5, 6, 7]
+
 
         ConfigValues = ["BALANCING THRESHOLD",
         "MIN VOLTAGE",
@@ -587,7 +706,7 @@ class MainWindow(QWidget):
         "MIN CURRENT",
         "MAX CURRENT",
         "MAX TEMP",
-        "MIN TEMP",
+        "MIN TEMP", 
         "MAX IC TEMP",
         "MIN IC TEMP",
         "DEBUG VOLTAGE",
@@ -630,7 +749,7 @@ class MainWindow(QWidget):
 
         for i in range(0,len(ConfigValues)):
             newCheckbox = QCheckBox(ConfigValues[i] + ":")
-            newCheckbox.setObjectName(ConfigValues[i] + "_Checkbox")
+            newCheckbox.setObjectName(ConfigValues[i])
             newCheckbox.clicked.connect(lambda: self.radioConfigButton.setChecked(True))
 
             newTextInput = TextEditLE()
@@ -638,6 +757,7 @@ class MainWindow(QWidget):
             
             newTextInput.clicked.connect(lambda currentCheckbox=newCheckbox: currentCheckbox.setChecked(True))
             newTextInput.clicked.connect(lambda: self.radioConfigButton.setChecked(True))
+
 
             self.checkboxes.append(newCheckbox)
             self.configTextinputs.append(newTextInput)
@@ -663,8 +783,8 @@ class MainWindow(QWidget):
             
             flipswitch = (not flipswitch)
 
-        
-        sendChargeButton.clicked.connect(lambda _, canID=int(defaultChargeID.toPlainText(), 16): sendToCANbus(self.candapter, canID, canData, True))
+
+        sendChargeButton.clicked.connect(lambda _: selectWhatToSend(self.candapter, int(defaultChargeID.toPlainText(), 16), self.messageSendRadioGroup.checkedId()))
 
 
         configGroup.setLayout(configGroupingLayout)

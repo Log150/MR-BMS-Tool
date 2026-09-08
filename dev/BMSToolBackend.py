@@ -61,14 +61,21 @@ def readCANbus(candapter,ID):
 
         return [message]
     
-    except ValueError:
-        pass
+    except ValueError as e:
+        print(e)
 
 
 
 def sendToCANbus(candapter, id, data, extended_id):
-    message = can.Message(arbitration_id=id, data=data, is_extended_id=extended_id)
-    candapter.sendCANMessage(message)
+
+    if isinstance(data[0], list):
+        for i in data:
+            message = can.Message(arbitration_id=id, data=i, is_extended_id=extended_id)
+            candapter.sendCANMessage(message)
+
+    else:
+        message = can.Message(arbitration_id=id, data=data, is_extended_id=extended_id)
+        candapter.sendCANMessage(message)
 
 
 def verifyCANDAPTERPresent():
